@@ -27,7 +27,10 @@ jobs:
       - name: Process new blog entry
         run: node scripts/process-blog-entry.js
 
-      - name: Build site
+      - name: Build client
+        run: npm run build
+
+      - name: Build server
         run: npm run build.server
 
       - name: Deploy to GitHub Pages repo
