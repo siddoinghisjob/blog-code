@@ -47,6 +47,10 @@
     "@fontsource-variable/fira-code": "^5.2.5",
     "@fontsource-variable/inter": "^5.2.5",
     "@fontsource-variable/space-grotesk": "^5.2.6",
-    "@fontsource/kalam": "^5.2.5"
+    "@fontsource/kalam": "^5.2.5",
+    "gray-matter": "^4.0.3",
+    "highlight.js": "^11.11.1",
+    "markdown-it": "^14.1.0",
+    "markdown-it-html5-embed": "^1.0.0"
   }
 }

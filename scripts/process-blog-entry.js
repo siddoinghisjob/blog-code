@@ -1,16 +1,46 @@
-const fs = require('fs');
-const path = require('path');
-const { execSync } = require('child_process');
-const matter = require('gray-matter');
+import fs from 'fs';
+import path from 'path';
+import { execSync } from 'child_process';
+import matter from 'gray-matter';
+import { fileURLToPath } from 'url';
+import MarkdownIt from 'markdown-it';
+import hljs from 'highlight.js';
+import html from 'markdown-it-html5-embed';
 
-// Find newly added blog files from git
+// Get __dirname equivalent in ES modules
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
+
+// Configure markdown parser with syntax highlighting
+const md = new MarkdownIt({
+  html: true,
+  linkify: true,
+  typographer: true,
+  highlight: function(str, lang) {
+    if (lang && hljs.getLanguage(lang)) {
+      try {
+        return `<pre class="not-prose"><code class="hljs language-${lang}">${
+          hljs.highlight(str, { language: lang, ignoreIllegals: true }).value
+        }</code></pre>`;
+      } catch (e) {
+        console.error("Highlight error:", e);
+      }
+    }
+    return `<pre class="not-prose"><code class="hljs">${md.utils.escapeHtml(str)}</code></pre>`;
+  }
+}).use(html, {
+  useImageSize: true // allows setting image dimensions
+});
+
+/**
+ * Find newly added blog files from the most recent git commit
+ * @returns {string[]} List of paths to new blog JSON files
+ */
 function findNewBlogFiles() {
   try {
-    // Get list of changed files in the last commit
     const gitOutput = execSync('git diff-tree --no-commit-id --name-only -r HEAD').toString();
     const changedFiles = gitOutput.split('\n').filter(file => file.trim());
     
-    // Filter for JSON files in the content/blogs directory
     return changedFiles.filter(file => 
       file.startsWith('content/blogs/') && file.endsWith('.json')
     );
@@ -20,29 +50,35 @@ function findNewBlogFiles() {
   }
 }
 
-// Generate blog page from template
+/**
+ * Generate a blog page from the template using the provided blog data
+ * @param {Object} blogData - The blog metadata and content information
+ */
 function generateBlogPage(blogData) {
   const { ID, Title, Author, Date, Tags, Location } = blogData;
   
-  // Ensure the directory exists
-  const blogDir = path.join('src', 'routes', 'blogs', ID);
+  // Ensure the blog directory exists
+  const blogDir = path.join(process.cwd(), 'src', 'routes', 'blogs', ID);
   if (!fs.existsSync(blogDir)) {
     fs.mkdirSync(blogDir, { recursive: true });
   }
   
-  // Read markdown content if it exists
-  let blogContent = '';
-  if (Location && fs.existsSync(Location)) {
-    const mdContent = fs.readFileSync(Location, 'utf-8');
+  // Process markdown content if it exists
+  let htmlContent = '';
+  if (Location && fs.existsSync(path.join(process.cwd(), Location))) {
+    const mdContent = fs.readFileSync(path.join(process.cwd(), Location), 'utf-8');
     const parsed = matter(mdContent);
-    blogContent = parsed.content;
+    
+    // Convert markdown to HTML with syntax highlighting
+    htmlContent = md.render(parsed.content);
   }
   
-  // Create blog index.tsx file
+  // Create blog index.tsx file with properly escaped HTML content
   const templateContent = `
 import { component$ } from '@builder.io/qwik';
 import { type DocumentHead } from '@builder.io/qwik-city';
 import { PageTransition } from '~/components/layout/utils/Pagetransition';
+import 'highlight.js/styles/github-dark.css';
 
 export default component$(() => {
   return (
@@ -60,8 +96,7 @@ export default component$(() => {
             </div>
           </header>
           
-          <div class="prose max-w-none dark:prose-invert">
-            ${blogContent.replace(/`/g, '\\`') || '<!-- Blog content will be inserted here -->'}
+          <div class="prose prose-pre:p-0 prose-pre:bg-transparent prose-pre:overflow-hidden max-w-none dark:prose-invert" dangerouslySetInnerHTML={{ __html: \`${htmlContent.replace(/`/g, '\\`').replace(/\$/g, '\\$')}\` }}>
           </div>
         </article>
       </main>
@@ -88,11 +123,13 @@ export const head: DocumentHead = {
   console.log(`Created blog page for ${ID}`);
 }
 
-// Update main blog index with new entry
+/**
+ * Update the main blog index with the new blog entry
+ * @param {Object} blogData - The blog metadata
+ */
 function updateBlogIndex(blogData) {
-  const indexPath = path.join('src', 'routes', 'blogs', 'index.tsx');
+  const indexPath = path.join(process.cwd(), 'src', 'routes', 'blogs', 'index.tsx');
   
-  // Read existing blog index
   if (!fs.existsSync(indexPath)) {
     console.error('Blog index file not found at:', indexPath);
     return;
@@ -112,28 +149,28 @@ function updateBlogIndex(blogData) {
   const blogPostsStr = blogPostsMatch[0];
   
   // Create new blog post entry
-  const { ID, Title, Date, Tags } = blogData;
+  const { ID, Title, Date, Tags, Location } = blogData;
   
-  // Calculate approximate read time (1 min per 200 words)
+  // Calculate read time based on word count (1 min per 200 words)
   let readTime = "5 min read"; // Default
-  if (blogData.Location && fs.existsSync(blogData.Location)) {
-    const content = fs.readFileSync(blogData.Location, 'utf-8');
+  if (Location && fs.existsSync(path.join(process.cwd(), Location))) {
+    const content = fs.readFileSync(path.join(process.cwd(), Location), 'utf-8');
     const wordCount = content.split(/\s+/).length;
-    const minutes = Math.ceil(wordCount / 200);
+    const minutes = Math.max(1, Math.ceil(wordCount / 200));
     readTime = `${minutes} min read`;
   }
   
-  // Create excerpt
-  let excerpt = ""; 
-  if (blogData.Location && fs.existsSync(blogData.Location)) {
-    const content = fs.readFileSync(blogData.Location, 'utf-8');
+  // Create excerpt from the first paragraph
+  let excerpt = "Click to read this blog post.";
+  if (Location && fs.existsSync(path.join(process.cwd(), Location))) {
+    const content = fs.readFileSync(path.join(process.cwd(), Location), 'utf-8');
     const parsed = matter(content);
-    // Get first 150 characters as excerpt or use first paragraph
-    const firstParagraph = parsed.content.split('\n\n')[0];
+    const firstParagraph = parsed.content.split('\n\n')[0]
+      .replace(/[#*_>`]/g, '') // Remove markdown syntax
+      .trim();
+    
     excerpt = firstParagraph.substring(0, 150).trim();
-    if (excerpt.length >= 150) excerpt += "...";
-  } else {
-    excerpt = "Click to read this blog post.";
+    if (firstParagraph.length > 150) excerpt += "...";
   }
   
   // New blog post object
@@ -164,9 +201,12 @@ function updateBlogIndex(blogData) {
   checkAndCreatePagination();
 }
 
-// Check if pagination is needed and create pages
+/**
+ * Create pagination pages if the number of blog posts exceeds the limit
+ */
 function checkAndCreatePagination() {
-  const indexPath = path.join('src', 'routes', 'blogs', 'index.tsx');
+  const POSTS_PER_PAGE = 7;
+  const indexPath = path.join(process.cwd(), 'src', 'routes', 'blogs', 'index.tsx');
   const indexContent = fs.readFileSync(indexPath, 'utf-8');
   
   // Extract the blogPosts array
@@ -178,21 +218,21 @@ function checkAndCreatePagination() {
   
   console.log(`Total blog entries: ${entriesCount}`);
   
-  if (entriesCount > 7) {
-    console.log('Creating pagination as entries exceed 7');
+  if (entriesCount > POSTS_PER_PAGE) {
+    console.log(`Creating pagination as entries exceed ${POSTS_PER_PAGE}`);
     
     // Calculate number of pages needed
-    const pagesNeeded = Math.ceil(entriesCount / 7);
+    const pagesNeeded = Math.ceil(entriesCount / POSTS_PER_PAGE);
     
     // Create page folders and index files
     for (let i = 1; i <= pagesNeeded; i++) {
-      const pageDir = path.join('src', 'routes', 'blogs', 'page', String(i));
+      const pageDir = path.join(process.cwd(), 'src', 'routes', 'blogs', 'page', String(i));
       if (!fs.existsSync(pageDir)) {
         fs.mkdirSync(pageDir, { recursive: true });
       }
       
-      const startIndex = (i - 1) * 7;
-      const endIndex = Math.min(startIndex + 7, entriesCount);
+      const startIndex = (i - 1) * POSTS_PER_PAGE;
+      const endIndex = Math.min(startIndex + POSTS_PER_PAGE, entriesCount);
       
       const pageContent = `
 import { component$ } from "@builder.io/qwik";
@@ -275,13 +315,13 @@ export const head: DocumentHead = {
       console.log(`Created pagination page ${i}`);
     }
     
-    // Update main index to show only first 7 entries and add pagination link
+    // Update main index to show only first set of entries and add pagination link
     if (!indexContent.includes('pagination')) {
       // Add pagination link if it doesn't exist
       const updatedContent = indexContent.replace(
         /<div class="flex flex-col gap-6">[\s\S]*?<\/div>/,
         `<div class="flex flex-col gap-6">
-          {blogPosts.slice(0, 7).map((post, key) => (
+          {blogPosts.slice(0, ${POSTS_PER_PAGE}).map((post, key) => (
             <Blog
               key={key}
               title={post.title}
@@ -307,10 +347,16 @@ export const head: DocumentHead = {
   }
 }
 
-// Process a blog entry from a JSON file
+/**
+ * Process a blog entry from a JSON file
+ * @param {string} jsonFilePath - Path to the JSON file
+ */
 function processBlogEntry(jsonFilePath) {
   try {
-    const jsonContent = fs.readFileSync(jsonFilePath, 'utf-8');
+    const fullPath = path.join(process.cwd(), jsonFilePath);
+    console.log(`Reading file from: ${fullPath}`);
+    
+    const jsonContent = fs.readFileSync(fullPath, 'utf-8');
     const blogData = JSON.parse(jsonContent);
     
     console.log(`Processing blog: ${blogData.Title}`);
@@ -332,7 +378,9 @@ function processBlogEntry(jsonFilePath) {
   }
 }
 
-// Main function
+/**
+ * Main function to run the script
+ */
 function main() {
   const newBlogFiles = findNewBlogFiles();
   console.log(`Found ${newBlogFiles.length} new blog files`);
