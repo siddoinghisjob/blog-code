@@ -8,7 +8,7 @@ interface Props{
   publishDate: string;
   readTime: string;
   tags: string[];
-  exerpt: string;
+  excerpt: string;
 }
 
 export default component$((props: Props) => {
@@ -27,6 +27,10 @@ export default component$((props: Props) => {
         <span class="text-secondary text-sm">{props.publishDate}</span>
         <span class="bg-secondary h-1 w-1 rounded-full"></span>
         <span class="text-secondary text-sm">{props.readTime}</span>
+      </div>
+
+      <div class="mt-2 mb-3 ml-8 flex items-center gap-2">
+        {props.excerpt}
       </div>
 
       <div class="ml-8 flex flex-wrap gap-2">

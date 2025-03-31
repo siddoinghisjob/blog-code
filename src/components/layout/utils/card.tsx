@@ -1,5 +1,6 @@
 import { component$, type JSXOutput } from "@builder.io/qwik";
 import { Link } from "@builder.io/qwik-city";
+import {Image} from "@unpic/qwik";
 
 interface image {
   name: string;
@@ -17,7 +18,8 @@ export default component$((props: CardComponent) => {
       key={index}
       class="bg-background relative flex flex-col rounded-lg text-white w-[30rem] h-[17rem]"
     >
-      <img
+      <Image
+        layout="constrained"
         src={"../../../public/assets/" + image.location}
         class = "w-[30rem]"
       />

@@ -5,15 +5,9 @@ import { PageTransition } from "~/components/layout/utils/Pagetransition";
 
 export default component$(() => {
   // Sample blog posts - replace with your actual blog data
-  interface blog {
-    id: string;
-    title: string;
-    publishDate: string;
-    readTime: string;
-    tags: string[];
-    excerpt: string;
-  }
-  const blogPosts : blog[] = [];
+  const blogPosts = [
+
+  ];
 
   return (
     <PageTransition>
@@ -36,7 +30,7 @@ export default component$(() => {
               publishDate={post.publishDate}
               readTime={post.readTime}
               tags={post.tags}
-              exerpt={post.excerpt}
+              excerpt={post.excerpt}
             />
           ))}
         </div>
