@@ -1,0 +1,40 @@
+name: Blog Automation
+
+on:
+  push:
+    paths:
+      - 'content/blogs/**/*.md'
+      - 'content/blogs/**/*.json'
+
+jobs:
+  build-and-deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0  # Fetch all history for proper diff detection
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '18'
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Process new blog entry
+        run: node scripts/process-blog-entry.js
+
+      - name: Build site
+        run: npm run build.ssg
+
+      - name: Deploy to GitHub Pages repo
+        uses: JamesIves/github-pages-deploy-action@v4
+        with:
+          folder: dist
+          token: ${{ secrets.DEPLOY_TOKEN }}
+          repository-name: sidoinghisjob/sidoinghisjob.github.io
+          branch: main
+          clean: true
