@@ -1,0 +1,16 @@
+{
+    "ID": "sample-blog",
+    "Title": "Sample Blog Post Title",
+    "Author": "Soumya Deep Sarkar",
+    "Date": "March 31, 2025",
+    "Tags": ["Sample", "Qwik", "Web Development"],
+    "Location": "content/blogs/sample-blog/blog-content.md",
+    "Recommendation": [
+      {
+        "name": "Another Blog Post",
+        "location": "/blogs/another-blog",
+        "author": "Soumya Deep Sarkar",
+        "tags": ["Related"]
+      }
+    ]
+  }
