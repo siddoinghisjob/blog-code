@@ -28,7 +28,7 @@ jobs:
         run: node scripts/process-blog-entry.js
 
       - name: Build site
-        run: npm run build.ssg
+        run: npm run build.server
 
       - name: Deploy to GitHub Pages repo
         uses: JamesIves/github-pages-deploy-action@v4
