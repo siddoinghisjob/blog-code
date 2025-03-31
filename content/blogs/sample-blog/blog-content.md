@@ -286,3 +286,5 @@ const canvas = <HTMLCanvasElement>document.getElementById("canvas");
 5. Utilize generics for reusable components
 6. Add explicit return types to functions
 7. Use readonly for immutable properties
+
+[Bye Bye](https://media.makeameme.org/created/sigma-bye-bye.jpg)

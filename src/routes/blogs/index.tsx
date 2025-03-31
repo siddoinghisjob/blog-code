@@ -7,7 +7,7 @@ export default component$(() => {
   // Sample blog posts - replace with your actual blog data
   const blogPosts = [
 
-  ];
+];
 
   return (
     <PageTransition>
