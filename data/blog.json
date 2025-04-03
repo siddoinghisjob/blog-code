@@ -1,0 +1,54 @@
+{
+    "blogs": [
+        {
+            "title": "Getting Started with Qwik: A Beginner's Guide",
+            "id": "getting-started-with-qwik",
+            "publishDate": "2023-10-01",
+            "readTime": "5 min",
+            "tags": ["Qwik", "Web Development", "JavaScript"],
+            "excerpt": "Learn the basics of Qwik framework and how it can improve your web application performance with its unique resumability approach.",
+            "content": "This is the content of my first blog about Qwik framework.",
+            "author": "John Doe"
+        },
+        {
+            "title": "Building Responsive UIs with Tailwind CSS",
+            "id": "responsive-uis-with-tailwind",
+            "publishDate": "2023-10-15",
+            "readTime": "7 min",
+            "tags": ["CSS", "Tailwind", "Responsive Design"],
+            "excerpt": "Discover how to create beautiful responsive interfaces quickly using Tailwind CSS utility classes.",
+            "content": "This is the content about building UIs with Tailwind CSS.",
+            "author": "Jane Smith"
+        },
+        {
+            "title": "State Management in Modern Web Applications",
+            "id": "state-management-modern-web",
+            "publishDate": "2023-11-05",
+            "readTime": "10 min",
+            "tags": ["State Management", "React", "Vue", "Qwik"],
+            "excerpt": "Compare different state management approaches across popular frameworks and learn which one fits your project needs.",
+            "content": "This is the content about state management in web applications.",
+            "author": "Alice Johnson"
+        },
+        {
+            "title": "The Future of Web Performance: Optimizing Core Web Vitals",
+            "id": "future-web-performance-core-web-vitals",
+            "publishDate": "2023-12-10",
+            "readTime": "8 min",
+            "tags": ["Performance", "SEO", "Core Web Vitals"],
+            "excerpt": "Learn how to improve your website's Core Web Vitals to boost SEO rankings and provide better user experience.",
+            "content": "This is the content about Web Performance and Core Web Vitals.",
+            "author": "Robert Chen"
+        },
+        {
+            "title": "TypeScript Best Practices for Large-Scale Applications",
+            "id": "typescript-best-practices",
+            "publishDate": "2024-01-20",
+            "readTime": "12 min",
+            "tags": ["TypeScript", "JavaScript", "Best Practices"],
+            "excerpt": "Discover key TypeScript patterns and practices that help maintain code quality in large projects.",
+            "content": "This is the content about TypeScript best practices.",
+            "author": "Emily Peterson"
+        }
+    ]
+}

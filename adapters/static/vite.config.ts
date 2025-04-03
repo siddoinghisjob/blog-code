@@ -12,7 +12,7 @@ export default extendConfig(baseConfig, () => {
     },
     plugins: [
       staticAdapter({
-        origin: "https://siddoinghisjob.github.io",
+        origin: "http://localhost:3000",
       }),
     ],
   };
