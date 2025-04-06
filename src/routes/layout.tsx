@@ -1,5 +1,20 @@
-import { component$, Slot } from "@builder.io/qwik";
+import {
+  component$,
+  Slot,
+  createContextId,
+  useContextProvider,
+  useStore,
+} from "@builder.io/qwik";
 import type { RequestHandler } from "@builder.io/qwik-city";
+import Footer from "~/components/layout/footer";
+import Header from "~/components/layout/header";
+import "@fontsource/kalam";
+import "@fontsource-variable/inter/wght.css";
+
+// Create a context for transition state
+export const TransitionContext = createContextId<{ isTransitioning: boolean }>(
+  "transition-context",
+);
 
 export const onGet: RequestHandler = async ({ cacheControl }) => {
   // Control caching for this request for best performance and to reduce hosting costs:
@@ -13,5 +28,19 @@ export const onGet: RequestHandler = async ({ cacheControl }) => {
 };
 
 export default component$(() => {
-  return <Slot />;
+  // Create a store for the transition state
+  const transitionState = useStore({
+    isTransitioning: false,
+  });
+
+  // Provide the transition state to all child components
+  useContextProvider(TransitionContext, transitionState);
+
+  return (
+      <div class="text-text flex min-h-screen flex-col justify-between">
+        <span><Header /></span>
+        <Slot />
+        <span><Footer /></span>
+      </div>
+  );
 });
