@@ -30,14 +30,34 @@ function ensureDirectoryExists(dirPath) {
 // Function to get changed files in the current push
 function getChangedFiles() {
   try {
-    // Get the changed files in the current push
-    const changedFilesOutput = execSync("git diff-tree --no-commit-id --name-only -r HEAD", { 
-      encoding: "utf8" 
-    });
+    console.log("Getting changed files in GitHub Actions environment...");
     
-    return changedFilesOutput.trim().split("\n").filter(Boolean);
+    // For GitHub Actions, fetch changes between the previous and current commit
+    // This works better in the CI environment than the diff-tree command
+    let changedFilesOutput;
+    
+    if (process.env.GITHUB_ACTIONS) {
+      // Get the base and head commits for the push event
+      const baseSha = execSync("git rev-parse HEAD~1", { encoding: "utf8" }).trim();
+      const headSha = execSync("git rev-parse HEAD", { encoding: "utf8" }).trim();
+      
+      console.log(`Comparing changes between ${baseSha} and ${headSha}`);
+      changedFilesOutput = execSync(`git diff --name-only ${baseSha} ${headSha}`, { 
+        encoding: "utf8" 
+      });
+    } else {
+      // Fallback for local development
+      changedFilesOutput = execSync("git diff-tree --no-commit-id --name-only -r HEAD", { 
+        encoding: "utf8" 
+      });
+    }
+    
+    const files = changedFilesOutput.trim().split("\n").filter(Boolean);
+    console.log(`Found ${files.length} changed files: ${files.join(", ")}`);
+    return files;
   } catch (error) {
     console.error("Error getting changed files:", error.message);
+    console.log("Processing all blog files instead.");
     return null; // Return null to indicate that we couldn't get the changed files
   }
 }
