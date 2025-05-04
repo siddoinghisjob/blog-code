@@ -6,7 +6,6 @@ import hljs from "highlight.js";
 import anchor from "markdown-it-anchor";
 import { fileURLToPath } from "url";
 import { dirname } from "path";
-import { execSync } from "child_process";
 
 // Create __dirname equivalent for ES modules
 const __filename = fileURLToPath(import.meta.url);
@@ -24,41 +23,6 @@ function ensureDirectoryExists(dirPath) {
   if (!fs.existsSync(dirPath)) {
     fs.mkdirSync(dirPath, { recursive: true });
     console.log(`Created directory: ${dirPath}`);
-  }
-}
-
-// Function to get changed files in the current push
-function getChangedFiles() {
-  try {
-    console.log("Getting changed files in GitHub Actions environment...");
-    
-    // For GitHub Actions, fetch changes between the previous and current commit
-    // This works better in the CI environment than the diff-tree command
-    let changedFilesOutput;
-    
-    if (process.env.GITHUB_ACTIONS) {
-      // Get the base and head commits for the push event
-      const baseSha = execSync("git rev-parse HEAD~1", { encoding: "utf8" }).trim();
-      const headSha = execSync("git rev-parse HEAD", { encoding: "utf8" }).trim();
-      
-      console.log(`Comparing changes between ${baseSha} and ${headSha}`);
-      changedFilesOutput = execSync(`git diff --name-only ${baseSha} ${headSha}`, { 
-        encoding: "utf8" 
-      });
-    } else {
-      // Fallback for local development
-      changedFilesOutput = execSync("git diff-tree --no-commit-id --name-only -r HEAD", { 
-        encoding: "utf8" 
-      });
-    }
-    
-    const files = changedFilesOutput.trim().split("\n").filter(Boolean);
-    console.log(`Found ${files.length} changed files: ${files.join(", ")}`);
-    return files;
-  } catch (error) {
-    console.error("Error getting changed files:", error.message);
-    console.log("Processing all blog files instead.");
-    return null; // Return null to indicate that we couldn't get the changed files
   }
 }
 
@@ -193,29 +157,11 @@ function processBlogPosts() {
   ensureDirectoryExists(CONTENT_DIR);
   ensureDirectoryExists(BLOG_OUTPUT_DIR);
 
-  // Get list of changed files in the current push
-  const changedFiles = getChangedFiles();
-  
-  if (!changedFiles) {
-    console.log("Couldn't determine changed files. Processing all blog files.");
-  } else {
-    console.log(`Changed files in this push: ${changedFiles.length}`);
-    
-    // Filter to only include content directory files
-    const changedContentFiles = changedFiles
-      .filter(file => file.startsWith('data/content/'));
-    console.log(changedFiles)
-    console.log(`Changed content files: ${changedContentFiles.join(', ')}`);
-    
-    if (changedContentFiles.length === 0) {
-      console.log("No blog content files were changed in this push. Exiting.");
-      return;
-    }
-  }
-
   let contentFiles;
   try {
+    // Read all files directly from the content directory
     contentFiles = fs.readdirSync(CONTENT_DIR);
+    console.log(`Found ${contentFiles.length} files/folders in ${CONTENT_DIR}.`);
   } catch (error) {
     console.error(`Error reading content directory ${CONTENT_DIR}:`, error);
     return;
@@ -224,28 +170,24 @@ function processBlogPosts() {
   const fileGroups = {};
   contentFiles.forEach((file) => {
     const ext = path.extname(file).toLowerCase();
-    const baseName = path.basename(file, ext);
-    
-    // Skip files that weren't changed if we have a list of changed files
-    if (changedFiles && !changedFiles.includes(`data/content/${file}`)) {
-      // Check if we already have a valid blog entry for this file
-      const existingEntry = blogData.blogs.find(blog => blog.id === baseName);
-      if (existingEntry) {
-        console.log(`Skipping unchanged file: ${file}`);
-        return;
-      }
+    // Ensure we only process files, not directories accidentally listed
+    if (!ext) {
+      console.log(`Skipping directory or file without extension: ${file}`);
+      return;
     }
-    
+    const baseName = path.basename(file, ext);
+
     if (!fileGroups[baseName]) fileGroups[baseName] = {};
     if (ext === ".md") fileGroups[baseName].markdown = file;
     else if (ext === ".json") fileGroups[baseName].json = file;
   });
 
   console.log(
-    `Found ${Object.keys(fileGroups).length} blog entries to process.`,
+    `Found ${Object.keys(fileGroups).length} potential blog entries based on file pairs.`,
   );
 
   let processedCount = 0;
+  // Process ALL file groups found
   for (const fileBaseName of Object.keys(fileGroups)) {
     const files = fileGroups[fileBaseName];
 
@@ -314,19 +256,24 @@ function processBlogPosts() {
     }
   }
 
-  if (processedCount > 0) {
+  // Write blog.json if ANY entries were processed or updated
+  if (processedCount > 0 || blogData.blogs.length > 0) {
     try {
+      // Ensure sorting happens before writing
+      blogData.blogs.sort(
+        (a, b) => new Date(b.publishDate).getTime() - new Date(a.publishDate).getTime(),
+      );
       fs.writeFileSync(BLOG_JSON_PATH, JSON.stringify(blogData, null, 2));
-      console.log(`Successfully updated ${BLOG_JSON_PATH}`);
+      console.log(`Successfully wrote updates to ${BLOG_JSON_PATH}`);
     } catch (error) {
       console.error(`Error writing updated ${BLOG_JSON_PATH}:`, error);
     }
   } else {
-    console.log("No blog entries were processed. Skipping blog.json update.");
+    console.log("No blog entries were processed or found. Skipping blog.json write.");
   }
 
   console.log(
-    `Blog processing completed. Processed ${processedCount} blog entries.`,
+    `Blog processing completed. Processed/updated ${processedCount} blog entries.`,
   );
 }
 
@@ -462,11 +409,6 @@ function updateBlogJson(id, metadata) {
     blogData.blogs.push(blogEntry);
     console.log(`Added new entry to blog.json for: ${id}`);
   }
-
-  // Optional: Sort blogs by date (newest first)
-  blogData.blogs.sort(
-    (a, b) => new Date(b.publishDate).getTime() - new Date(a.publishDate).getTime(),
-  );
 }
 
 // --- Run the Process ---
