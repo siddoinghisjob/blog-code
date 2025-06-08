@@ -1,16 +1,3 @@
 {
-  "blogs": [
-    {
-      "id": "why-do-we-need-qwik-js",
-      "title": "Why do we need Qwik JS?",
-      "publishDate": "2025-05-03",
-      "readTime": "5 min",
-      "tags": [
-        "Qwik JS",
-        "Lazy Loading"
-      ],
-      "excerpt": "Why Qwik JS? Because the web deserves to be fast, lazy, and unapologetically smart. While the other JS frameworks are busy hydrating like they’re in a desert, Qwik just shows up, resumes where it left off, and drops the mic. Welcome to the era of resumability — your JavaScript can finally chill... until it's actually needed.",
-      "author": "Soumya Deep Sarkar"
-    }
-  ]
+  "blogs": []
 }
